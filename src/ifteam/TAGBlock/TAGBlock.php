@@ -5,8 +5,9 @@ namespace ifteam\TAGBlock;
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
 use pocketmine\utils\Config;
-use pocketmine\network\protocol\AddPlayerPacket;
-use pocketmine\network\protocol\RemovePlayerPacket;
+use pocketmine\network\protocol\AddEntityPacket;
+use pocketmine\network\protocol\RemoveEntityPacket;
+use pocketmine\entity\Item as ItemEntity;
 use pocketmine\utils\TextFormat;
 use pocketmine\event\block\SignChangeEvent;
 use pocketmine\level\Level;
@@ -28,18 +29,42 @@ class TAGBlock extends PluginBase implements Listener {
 		$this->initMessage ();
 		$this->db = (new Config ( $this->getDataFolder () . "TAG_DB.yml", Config::YAML ))->getAll ();
 		
-		$this->packet ["AddPlayerPacket"] = new AddPlayerPacket ();
-		$this->packet ["AddPlayerPacket"]->clientID = 0;
-		$this->packet ["AddPlayerPacket"]->yaw = 0;
-		$this->packet ["AddPlayerPacket"]->pitch = 0;
-		$this->packet ["AddPlayerPacket"]->item = 0;
-		$this->packet ["AddPlayerPacket"]->meta = 0;
-		$this->packet ["AddPlayerPacket"]->slim =\false;
-		$this->packet ["AddPlayerPacket"]->skin =\str_repeat ( "\x00", 64 * 32 * 4 );
-		$this->packet ["AddPlayerPacket"]->metadata = [ Entity::DATA_FLAGS => [ Entity::DATA_TYPE_BYTE,1 << Entity::DATA_FLAG_INVISIBLE ] ]; // [ Entity::DATA_FLAGS => [ Entity::DATA_TYPE_BYTE,1 << Entity::DATA_FLAG_INVISIBLE ],Entity::DATA_AIR => [ Entity::DATA_TYPE_SHORT,300 ],Entity::DATA_SHOW_NAMETAG => [ Entity::DATA_TYPE_BYTE,1 ],Entity::DATA_NO_AI => [ Entity::DATA_TYPE_BYTE,1 ] ];
+		$this->packet ["AddEntityPacket"] = new AddEntityPacket ();
+		$this->packet ["AddEntityPacket"]->eid = 0;
+		$this->packet ["AddEntityPacket"]->type = ItemEntity::NETWORK_ID;
+		$this->packet ["AddEntityPacket"]->x = 0;
+		$this->packet ["AddEntityPacket"]->y = 0;
+		$this->packet ["AddEntityPacket"]->z = 0;
+		$this->packet ["AddEntityPacket"]->speedX = 0;
+		$this->packet ["AddEntityPacket"]->speedY = 0;
+		$this->packet ["AddEntityPacket"]->speedZ = 0;
+		$this->packet ["AddEntityPacket"]->yaw = 0;
+		$this->packet ["AddEntityPacket"]->pitch = 0;
+		$this->packet ["AddEntityPacket"]->item = 0;
+		$this->packet ["AddEntityPacket"]->meta = 0;
+		$this->packet ["AddEntityPacket"]->metadata = [
+				Entity::DATA_FLAGS => [
+						Entity::DATA_TYPE_BYTE,
+						1 << Entity::DATA_FLAG_INVISIBLE
+				],
+				Entity::DATA_NAMETAG => [
+						Entity::DATA_TYPE_STRING,
+						""
+				],
+				Entity::DATA_SHOW_NAMETAG => [
+						Entity::DATA_TYPE_BYTE,
+						1
+				],
+				Entity::DATA_NO_AI => [
+						Entity::DATA_TYPE_BYTE,
+						1
+				],
+				Entity::DATA_AIR => [
+						Entity::DATA_TYPE_SHORT, 10
+				]
+		];
 		
-		$this->packet ["RemovePlayerPacket"] = new RemovePlayerPacket ();
-		$this->packet ["RemovePlayerPacket"]->clientID = 0;
+		$this->packet ["RemoveEntityPacket"] = new RemoveEntityPacket ();
 		
 		// 플러그인의 명령어 등록
 		$this->registerCommand ( "tagblock", "tagblock.add", $this->get ( "TAGBlock-description" ), $this->get ( "TAGBlock-command-help" ) );
@@ -53,15 +78,21 @@ class TAGBlock extends PluginBase implements Listener {
 		$save->save ();
 	}
 	public function onQuit(PlayerQuitEvent $event) {
-		if (isset ( $this->temp [$event->getPlayer ()->getName ()] )) unset ( $this->temp [$event->getPlayer ()->getName ()] );
+		if (isset ( $this->temp [$event->getPlayer ()->getName ()] ))
+			unset ( $this->temp [$event->getPlayer ()->getName ()] );
 	}
 	public function SignChange(SignChangeEvent $event) {
-		if (! $event->getPlayer ()->hasPermission ( "tagblock.add" )) return;
-		if (strtolower ( $event->getLine ( 0 ) ) != $this->get ( "TAGBlock-line0" )) return;
+		if (! $event->getPlayer ()->hasPermission ( "tagblock.add" ))
+			return;
+		if (strtolower ( $event->getLine ( 0 ) ) != $this->get ( "TAGBlock-line0" ))
+			return;
 		
-		if ($event->getLine ( 1 ) != null) $message = $event->getLine ( 1 );
-		if ($event->getLine ( 2 ) != null) $message .= "\n" . $event->getLine ( 2 );
-		if ($event->getLine ( 3 ) != null) $message .= "\n" . $event->getLine ( 3 );
+		if ($event->getLine ( 1 ) != null)
+			$message = $event->getLine ( 1 );
+		if ($event->getLine ( 2 ) != null)
+			$message .= "\n" . $event->getLine ( 2 );
+		if ($event->getLine ( 3 ) != null)
+			$message .= "\n" . $event->getLine ( 3 );
 		
 		$block = $event->getBlock ()->getSide ( 0 );
 		$blockPos = "{$block->x}.{$block->y}.{$block->z}";
@@ -102,16 +133,18 @@ class TAGBlock extends PluginBase implements Listener {
 		return true;
 	}
 	public function BlockBreak(BlockBreakEvent $event) {
-		if (! $event->getPlayer ()->hasPermission ( "tagblock.add" )) return;
+		if (! $event->getPlayer ()->hasPermission ( "tagblock.add" ))
+			return;
 		
 		$block = $event->getBlock ();
 		$blockPos = "{$block->x}.{$block->y}.{$block->z}";
 		
-		if (! isset ( $this->db ["TAGBlock"] [$block->level->getFolderName ()] [$blockPos] )) return;
+		if (! isset ( $this->db ["TAGBlock"] [$block->level->getFolderName ()] [$blockPos] ))
+			return;
 		
 		if (isset ( $this->temp [$event->getPlayer ()->getName ()] ["nametag"] [$blockPos] )) {
-			$this->packet ["RemovePlayerPacket"]->eid = $this->temp [$event->getPlayer ()->getName ()] ["nametag"] [$blockPos];
-			$event->getPlayer ()->dataPacket ( $this->packet ["RemovePlayerPacket"] ); // 네임택 제거패킷 전송
+			$this->packet ["RemoveEntityPacket"]->eid = $this->temp [$event->getPlayer ()->getName ()] ["nametag"] [$blockPos];
+			$event->getPlayer ()->dataPacket ( $this->packet ["RemoveEntityPacket"] ); // 네임택 제거패킷 전송
 		}
 		
 		unset ( $this->db ["TAGBlock"] [$block->level->getFolderName ()] [$blockPos] );
@@ -119,10 +152,12 @@ class TAGBlock extends PluginBase implements Listener {
 	}
 	public function TAGBlock() {
 		foreach ( $this->getServer ()->getOnlinePlayers () as $player ) {
-			if (! isset ( $this->db ["TAGBlock"] [$player->level->getFolderName ()] )) continue;
+			if (! isset ( $this->db ["TAGBlock"] [$player->level->getFolderName ()] ))
+				continue;
 			foreach ( $this->db ["TAGBlock"] [$player->level->getFolderName ()] as $tagPos => $message ) {
 				$explodePos = explode ( ".", $tagPos );
-				if (! isset ( $explodePos [2] )) continue;
+				if (! isset ( $explodePos [2] ))
+					continue;
 				
 				$dx = abs ( $explodePos [0] - $player->x );
 				$dy = abs ( $explodePos [1] - $player->y );
@@ -131,24 +166,26 @@ class TAGBlock extends PluginBase implements Listener {
 				if (! ($dx <= 25 and $dy <= 25 and $dz <= 25)) {
 					// 반경 25블럭을 넘어갔을경우 생성해제 패킷 전송후 생성패킷큐를 제거
 					if (isset ( $this->temp [$player->getName ()] ["nametag"] [$tagPos] )) {
-						$this->packet ["RemovePlayerPacket"]->eid = $this->temp [$player->getName ()] ["nametag"] [$tagPos];
-						$this->packet ["RemovePlayerPacket"]->clientID = $this->temp [$player->getName ()] ["nametag"] [$tagPos];
-						$player->dataPacket ( $this->packet ["RemovePlayerPacket"] ); // 네임택 제거패킷 전송
+						$this->packet ["RemoveEntityPacket"]->eid = $this->temp [$player->getName ()] ["nametag"] [$tagPos];
+						$player->dataPacket ( $this->packet ["RemoveEntityPacket"] ); // 네임택 제거패킷 전송
 						unset ( $this->temp [$player->getName ()] ["nametag"] [$tagPos] );
 					}
 				} else {
 					// 반경 25블럭 내일경우 생성패킷 전송 후 생성패킷큐에 추가
-					if (isset ( $this->temp [$player->getName ()] ["nametag"] [$tagPos] )) continue;
-					
-					// 유저 패킷을 상점밑에 보내서 네임택 출력
+					if (isset ( $this->temp [$player->getName ()] ["nametag"] [$tagPos] ))
+						continue;
+						
+						// 유저 패킷을 상점밑에 보내서 네임택 출력
 					$this->temp [$player->getName ()] ["nametag"] [$tagPos] = Entity::$entityCount ++;
-					$this->packet ["AddPlayerPacket"]->eid = $this->temp [$player->getName ()] ["nametag"] [$tagPos];
-					$this->packet ["AddPlayerPacket"]->clientID = $this->temp [$player->getName ()] ["nametag"] [$tagPos];
-					$this->packet ["AddPlayerPacket"]->username = $message;
-					$this->packet ["AddPlayerPacket"]->x = $explodePos [0] + 0.4;
-					$this->packet ["AddPlayerPacket"]->y = $explodePos [1] - 1.6;
-					$this->packet ["AddPlayerPacket"]->z = $explodePos [2] + 0.4;
-					$player->dataPacket ( $this->packet ["AddPlayerPacket"] );
+					$this->packet ["AddEntityPacket"]->eid = $this->temp [$player->getName ()] ["nametag"] [$tagPos];
+					$this->packet ["AddEntityPacket"]->metadata [Entity::DATA_NAMETAG] = [
+							Entity::DATA_TYPE_STRING,
+							$message
+					];
+					$this->packet ["AddEntityPacket"]->x = $explodePos [0] + 0.4;
+					$this->packet ["AddEntityPacket"]->y = $explodePos [1] - 1.6;
+					$this->packet ["AddEntityPacket"]->z = $explodePos [2] + 0.4;
+					$player->dataPacket ( $this->packet ["AddEntityPacket"] );
 				}
 			}
 		}
@@ -187,11 +224,13 @@ class TAGBlock extends PluginBase implements Listener {
 		$commandMap->register ( $name, $command );
 	}
 	public function message(CommandSender $player, $text = "", $mark = null) {
-		if ($mark == null) $mark = $this->get ( "default-prefix" );
+		if ($mark == null)
+			$mark = $this->get ( "default-prefix" );
 		$player->sendMessage ( TextFormat::DARK_AQUA . $mark . " " . $text );
 	}
 	public function alert(CommandSender $player, $text = "", $mark = null) {
-		if ($mark == null) $mark = $this->get ( "default-prefix" );
+		if ($mark == null)
+			$mark = $this->get ( "default-prefix" );
 		$player->sendMessage ( TextFormat::RED . $mark . " " . $text );
 	}
 }

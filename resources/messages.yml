@@ -14,6 +14,16 @@ eng-TAGBlock-level-doesnt-exist: "Level doesn't exist !"
 eng-TAGBlock-command-help: "/tagblock <world> <x> <y> <z> <messages>"
 eng-TAGBlock-description: "Add the NameTAG in the desired position"
 
+#(RU) RUSSIAN
+rus: true
+rus-default-prefix: "[ Сервер ]"
+rus-TAGBlock-line0: "tagblock"
+rus-TAGBlock-added: "TAGBlock добавлен!"
+rus-TAGBlock-deleted: "TAGBlock удален!"
+rus-TAGBlock-level-doesnt-exist: "Мир не найден!"
+rus-TAGBlock-command-help: "/tagblock <мир> <x> <y> <z> <текст>"
+rus-TAGBlock-description: "Добавляет NameTAG в нужное место"
+
 #(IT) ITALIAN
 ita: true
 ita-default-prefix: "[ SERVER ]"

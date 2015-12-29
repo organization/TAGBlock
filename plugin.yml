@@ -1,6 +1,6 @@
 name: TAGBlock
 main: ifteam\TAGBlock\TAGBlock
-version: 0.7-Alpha
+version: 0.8-Alpha
 author: ifteam
 api:
 - 1.13.0

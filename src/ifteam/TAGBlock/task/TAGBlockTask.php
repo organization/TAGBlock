@@ -10,7 +10,7 @@ class TAGBlockTask extends PluginTask {
 		parent::__construct ( $owner );
 	}
 	public function onRun($currentTick) {
-		$this->owner->TAGBlock ();
+		$this->owner->pushSearchProcess ();
 	}
 }
 

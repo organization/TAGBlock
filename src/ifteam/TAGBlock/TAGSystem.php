@@ -51,7 +51,7 @@ class TAGSystem {
 	 * @param Position $pos        	
 	 */
 	public function deleteTag(Position $pos) {
-		if ($this->isTAGBlockExist ( $pos ))
+		if ($this->isTagExist ( $pos ))
 			unset ( $this->plugin->getDb ()->db ["TAGBlock"] [$pos->getLevel ()->getFolderName ()] [( int ) $pos->x . "." . ( int ) $pos->y . "." . ( int ) $pos->z] );
 	}
 	/**

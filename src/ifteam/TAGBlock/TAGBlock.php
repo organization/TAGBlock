@@ -232,7 +232,7 @@ class TAGBlock extends PluginBase implements Listener {
 	 * @return RemoveEntityPacket
 	 */
 	public function getRemoveEntityPacket() {
-		return $this->packet ["AddEntityPacket"];
+		return $this->packet ["RemoveEntityPacket"];
 	}
 	/**
 	 * 사용할 패킷을 사전에 정의해놓습니다.
@@ -251,27 +251,20 @@ class TAGBlock extends PluginBase implements Listener {
 		$this->packet ["AddEntityPacket"]->pitch = 0;
 		$this->packet ["AddEntityPacket"]->item = 0;
 		$this->packet ["AddEntityPacket"]->meta = 0;
+		$flags = 0;
+		$flags |= 1 << Entity::DATA_FLAG_INVISIBLE;
+		$flags |= 1 << Entity::DATA_FLAG_CAN_SHOW_NAMETAG;
+		$flags |= 1 << Entity::DATA_FLAG_ALWAYS_SHOW_NAMETAG;
+		$flags |= 1 << Entity::DATA_FLAG_IMMOBILE;
 		$this->packet ["AddEntityPacket"]->metadata = [ 
 				Entity::DATA_FLAGS => [ 
-						Entity::DATA_TYPE_BYTE,
-						1 << Entity::DATA_FLAG_INVISIBLE 
+						Entity::DATA_TYPE_LONG,
+						$flags
 				],
 				Entity::DATA_NAMETAG => [ 
 						Entity::DATA_TYPE_STRING,
 						"" 
-				],
-				Entity::DATA_SHOW_NAMETAG => [ 
-						Entity::DATA_TYPE_BYTE,
-						1 
-				],
-				Entity::DATA_NO_AI => [ 
-						Entity::DATA_TYPE_BYTE,
-						1 
-				],
-				Entity::DATA_AIR => [ 
-						Entity::DATA_TYPE_SHORT,
-						10 
-				] 
+				]
 		];
 		
 		$this->packet ["RemoveEntityPacket"] = new RemoveEntityPacket ();
